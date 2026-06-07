@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TikTokSave</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { --bg: #070710; --surface: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.08); --accent: #fe2c55; --accent2: #25f4ee; --blue: #3b6ef5; --text: #ffffff; --muted: rgba(255,255,255,0.45); }
+        body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ''; position: fixed; top: -120px; left: -80px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(254,44,85,0.15) 0%, transparent 70%); pointer-events: none; z-index: 0; animation: drift 8s ease-in-out infinite alternate; }
+        body::after { content: ''; position: fixed; bottom: -100px; right: -60px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(37,244,238,0.10) 0%, transparent 70%); pointer-events: none; z-index: 0; animation: drift 10s ease-in-out infinite alternate-reverse; }
+        @keyframes drift { from { transform: translate(0,0); } to { transform: translate(30px,20px); } }
+        .page { display: none; flex-direction: column; min-height: 100vh; padding-bottom: 74px; position: relative; z-index: 1; }
+        .page.active { display: flex; }
+        #homePage { align-items: center; padding: 40px 20px 80px; }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; animation: fadeDown 0.5s ease both; }
+        .logo-icon { width: 52px; height: 52px; background: #fff; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 20px rgba(254,44,85,0.35); }
+        .logo-icon-top { flex: 1; display: flex; align-items: center; justify-content: center; }
+        .logo-icon-bottom { background: var(--accent); display: flex; align-items: center; justify-content: center; padding: 4px 0; font-size: 13px; line-height: 1; }
+        .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
+        .logo-text span { color: var(--accent); }
+        .card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 28px 22px; backdrop-filter: blur(20px); animation: fadeUp 0.4s ease 0.1s both; }
+        .card-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+        .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+        .input-wrap { position: relative; margin-bottom: 14px; }
+        .input-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; opacity: 0.4; pointer-events: none; }
+        input[type="text"] { width: 100%; padding: 15px 15px 15px 46px; background: rgba(255,255,255,0.06); border: 1.5px solid var(--border); border-radius: 14px; color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: all 0.25s; }
+        input::placeholder { color: var(--muted); }
+        input:focus { border-color: var(--accent); background: rgba(254,44,85,0.06); box-shadow: 0 0 0 4px rgba(254,44,85,0.1); }
+        .btn-primary { width: 100%; padding: 16px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent), #ff6b35); color: white; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 6px 24px rgba(254,44,85,0.35); position: relative; overflow: hidden; }
+        .btn-primary::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent); }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.5; transform: none; }
+        .footer-note { text-align: center; font-size: 11px; color: var(--muted); margin-top: 20px; line-height: 1.6; }
+        #resultPage { padding: 0 0 80px; }
+        .result-topbar { display: flex; align-items: center; padding: 16px 20px 10px; gap: 8px; position: relative; z-index: 1; }
+        .back-btn { background: none; border: none; color: white; font-family: 'DM Sans', sans-serif; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.8; }
+        .video-thumb { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .video-thumb::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(254,44,85,0.08), rgba(37,244,238,0.08)); }
+        .play-btn { width: 56px; height: 56px; background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1.5px solid rgba(255,255,255,0.2); position: relative; z-index: 1; }
+        .video-info { padding: 16px 20px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); }
+        .video-user { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .avatar { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .username { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; }
+        .video-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 4px; }
+        .video-date { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 4px; }
+        .dl-buttons { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+        .dl-btn { width: 100%; padding: 15px 18px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--surface); color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); }
+        .dl-btn:active { transform: scale(0.98); }
+        .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .dl-btn-left { display: flex; align-items: center; gap: 12px; }
+        .dl-btn-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+        .icon-v { background: rgba(254,44,85,0.15); }
+        .icon-m { background: rgba(37,244,238,0.12); }
+        .dl-label { font-size: 14px; font-weight: 500; }
+        .dl-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+        .badge-ad { background: rgba(254,44,85,0.15); color: var(--accent); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(254,44,85,0.2); }
+        .badge-free { background: rgba(37,244,238,0.1); color: var(--accent2); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(37,244,238,0.2); }
+        .progress-wrap { height: 3px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; display: none; margin: -4px 20px 0; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #ff6b35); width: 0%; transition: width 5s linear; }
+        #downloadsPage { padding: 20px 20px 80px; }
+        .page-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; }
+        .section-day { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
+        .dl-list { display: flex; flex-direction: column; gap: 10px; }
+        .dl-item { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); animation: fadeUp 0.3s ease both; }
+        .dl-thumb { width: 62px; height: 62px; border-radius: 10px; background: #1c2333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .dl-info { flex: 1; min-width: 0; }
+        .dl-link { font-size: 13px; color: #3b6ef5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+        .dl-desc { font-size: 12px; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .dl-time { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 4px; }
+        .dl-save { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; flex-shrink: 0; padding: 4px; }
+        .empty-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 80px; gap: 12px; color: var(--muted); }
+        .empty-icon { font-size: 52px; opacity: 0.3; }
+        .empty-text { font-size: 14px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(7,7,16,0.95); border-top: 1px solid var(--border); display: flex; z-index: 100; backdrop-filter: blur(20px); }
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; gap: 4px; cursor: pointer; transition: color 0.2s; }
+        .nav-btn.active { color: #3b6ef5; }
+        .nav-btn svg { width: 24px; height: 24px; }
+        .result-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(7,7,16,0.95); border-top: 1px solid var(--border); display: none; z-index: 100; backdrop-filter: blur(20px); }
+        .result-bottom-nav.visible { display: flex; }
+        .result-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 14px; background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 11px; gap: 4px; cursor: pointer; transition: color 0.2s; }
+        .result-nav-btn svg { width: 24px; height: 24px; }
+        .result-nav-btn:active { opacity: 0.7; }
+        .result-nav-btn.share-btn { color: #3b6ef5; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .dots { display: inline-flex; gap: 5px; align-items: center; }
+        .dots span { width: 6px; height: 6px; background: white; border-radius: 50%; animation: db 0.7s ease infinite; }
+        .dots span:nth-child(2) { animation-delay: 0.15s; }
+        .dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes db { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="page active" id="homePage">
+    <div class="logo">
+        <div class="logo-icon">
+            <div class="logo-icon-top">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <circle cx="9" cy="17" r="3" fill="#1a1a3e"/>
+                    <path d="M9 17V7l8-2v3" stroke="#1a1a3e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="17" cy="14" r="3" fill="#1a1a3e"/>
+                </svg>
+            </div>
+            <div class="logo-icon-bottom">⬇</div>
+        </div>
+        <div class="logo-text">TikTok<span>Save</span></div>
+    </div>
+    <div class="card">
+        <div class="card-title">Download TikTok<br>Videos & Music</div>
+        <div class="card-sub">No watermark · HD quality · Fast</div>
+        <div class="input-wrap">
+            <span class="input-icon">🔗</span>
+            <input type="text" id="tiktokLink" placeholder="Paste TikTok link here...">
+        </div>
+        <button class="btn-primary" id="downloadBtn" onclick="processLink()">Download Now ↓</button>
+    </div>
+    <div class="footer-note">Supports vt.tiktok.com · tiktok.com links<br>For personal use only</div>
+</div>
+
+<div class="page" id="resultPage">
+    <div class="result-topbar">
+        <button class="back-btn" onclick="goHome()">← Back</button>
+    </div>
+    <div class="video-thumb">
+        <div class="play-btn">▶</div>
+    </div>
+    <div class="video-info">
+        <div class="video-user">
+            <div class="avatar">🎵</div>
+            <div class="username" id="rUser">@username</div>
+        </div>
+        <div class="video-desc" id="rDesc">Video description here</div>
+        <div class="video-date" id="rDate"></div>
+    </div>
+    <div class="dl-buttons">
+        <button class="dl-btn" id="adBtn" onclick="showAd()">
+            <div class="dl-btn-left">
+                <div class="dl-btn-icon icon-v">📹</div>
+                <div><div class="dl-label">Download Video</div><div class="dl-sub">HD · No watermark</div></div>
+            </div>
+            <span class="badge-ad">AD</span>
+        </button>
+        <div class="progress-wrap" id="progressWrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <button class="dl-btn">
+            <div class="dl-btn-left">
+                <div class="dl-btn-icon icon-m">🎵</div>
+                <div><div class="dl-label">Download Music</div><div class="dl-sub">MP3 · High quality</div></div>
+            </div>
+            <span class="badge-free">FREE</span>
+        </button>
+    </div>
+</div>
+
+<div class="page" id="downloadsPage">
+    <div class="page-title">Downloads</div>
+    <div id="dlContent">
+        <div class="empty-wrap" id="emptyState">
+            <div class="empty-icon">⬇</div>
+            <div class="empty-text">No downloads yet</div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav" id="mainNav">
+    <button class="nav-btn active" id="navHome" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+        Home
+    </button>
+    <button class="nav-btn" id="navDl" onclick="switchTab('downloads')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8.5 12.5L12 16l3.5-3.5"/></svg>
+        Downloads
+    </button>
+</div>
+
+<div class="result-bottom-nav" id="resultNav">
+    <button class="result-nav-btn" onclick="goHome()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        Back
+    </button>
+    <button class="result-nav-btn share-btn" onclick="shareVideo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12M8.5 6.5L12 3l3.5 3.5"/></svg>
+        Share
+    </button>
+</div>
+
+<script>
+var tg=null;try{tg=window.Telegram&&window.Telegram.WebApp?window.Telegram.WebApp:null;if(tg){tg.ready();tg.expand();if(tg.requestFullscreen)tg.requestFullscreen();}}catch(e){}
+function tgAlert(m){if(tg)tg.showAlert(m);else alert(m);}
+function tgOpenLink(u){if(tg)tg.openLink(u);else window.open(u,'_blank');}
+var downloads=[],currentLink='';
+function showMainNav(){document.getElementById('mainNav').style.display='flex';document.getElementById('resultNav').classList.remove('visible');}
+function showResultNav(){document.getElementById('mainNav').style.display='none';document.getElementById('resultNav').classList.add('visible');}
+function switchTab(tab){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});showMainNav();if(tab==='home'){document.getElementById('homePage').classList.add('active');document.getElementById('navHome').classList.add('active');}else{document.getElementById('downloadsPage').classList.add('active');document.getElementById('navDl').classList.add('active');renderDownloads();}}
+function processLink(){var link=document.getElementById('tiktokLink').value.trim();var btn=document.getElementById('downloadBtn');if(!link){tgAlert("Please paste a valid TikTok link!");return;}currentLink=link;btn.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';btn.disabled=true;setTimeout(function(){btn.innerHTML='Download Now ↓';btn.disabled=false;document.getElementById('rUser').textContent='@'+extractUser(link);document.getElementById('rDesc').textContent='#အပ်ဖို့သူဘာတကယ်လတယ် 😍🥰😘 #viewတော့ရှယ်ကျ 😢🤚';document.getElementById('rDate').textContent=formatDate();var adBtn=document.getElementById('adBtn');adBtn.innerHTML='<div class="dl-btn-left"><div class="dl-btn-icon icon-v">📹</div><div><div class="dl-label">Download Video</div><div class="dl-sub">HD · No watermark</div></div></div><span class="badge-ad">AD</span>';adBtn.disabled=false;adBtn.onclick=showAd;document.getElementById('progressWrap').style.display='none';document.getElementById('progressBar').style.width='0%';document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});document.getElementById('resultPage').classList.add('active');document.getElementById('navHome').classList.add('active');showResultNav();},1800);}
+function goHome(){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});document.getElementById('homePage').classList.add('active');document.getElementById('navHome').classList.add('active');document.getElementById('tiktokLink').value='';showMainNav();}
+function shareVideo(){var desc=document.getElementById('rDesc').textContent;var shareText=currentLink+'\n'+desc+'\n\nDownloaded via: @tiktokvideodownloaderbot';if(tg){tg.switchInlineQuery(shareText);}else if(navigator.share){navigator.share({text:shareText});}else{tgAlert('Share:\n'+shareText);}}
+function showAd(){tgOpenLink("https://www.effectivecpmnetwork.com/m0mifaq4?key=4844cde739311ef0e587e990e3a81d91");var adBtn=document.getElementById('adBtn');var progressWrap=document.getElementById('progressWrap');var progressBar=document.getElementById('progressBar');adBtn.innerHTML='<div class="dl-btn-left"><div class="dl-btn-icon icon-v">⏳</div><div><div class="dl-label">Watching Ad...</div><div class="dl-sub">Please wait 5 seconds</div></div></div><span class="badge-ad">WAIT</span>';adBtn.disabled=true;progressWrap.style.display='block';setTimeout(function(){progressBar.style.width='100%';},50);downloads.unshift({link:currentLink,desc:document.getElementById('rDesc').textContent,time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})});setTimeout(function(){adBtn.innerHTML='<div class="dl-btn-left"><div class="dl-btn-icon icon-v">✅</div><div><div class="dl-label">Download Ready!</div><div class="dl-sub">Tap to download</div></div></div><span class="badge-ad">✓</span>';adBtn.disabled=false;adBtn.onclick=function(){tgAlert("Starting download...");};tgAlert("Ad viewed! Video is ready to download.");},5000);}
+function renderDownloads(){var content=document.getElementById('dlContent');if(downloads.length===0){content.innerHTML='<div class="empty-wrap"><div class="empty-icon">⬇</div><div class="empty-text">No downloads yet</div></div>';return;}var html='<div class="section-day">Today</div><div class="dl-list">';downloads.forEach(function(d){html+='<div class="dl-item"><div class="dl-thumb">🎵</div><div class="dl-info"><div class="dl-link">'+d.link+'</div><div class="dl-desc">'+d.desc+'</div><div class="dl-time">'+d.time+'</div></div><button class="dl-save" onclick="tgAlert(\'Saving...\')">⬇</button></div>';});html+='</div>';content.innerHTML=html;}
+function extractUser(link){var match=link.match(/@([^/?]+)/);return match?match[1]:'user';}
+function formatDate(){var d=new Date();return('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear();}
+</script>
+</body>
+</html>
