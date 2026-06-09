@@ -3,169 +3,1093 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Downloader</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>TikTokSave</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         :root {
-            --bg-color: #0f172a;
-            --input-bg: #1e293b;
-            --btn-color: #3b82f6;
-            --text-color: #ffffff;
+            --bg: #070710;
+            --surface: rgba(255,255,255,0.05);
+            --surface-hover: rgba(255,255,255,0.08);
+            --border: rgba(255,255,255,0.08);
+            --accent: #fe2c55;
+            --accent2: #25f4ee;
+            --blue: #3b6ef5;
+            --green: #00d26a;
+            --text: #ffffff;
+            --muted: rgba(255,255,255,0.45);
         }
-        
+
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* BG orbs */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -120px; left: -80px;
+            width: 340px; height: 340px;
+            background: radial-gradient(circle, rgba(254,44,85,0.15) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+            animation: drift 8s ease-in-out infinite alternate;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -100px; right: -60px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(37,244,238,0.10) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+            animation: drift 10s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes drift {
+            from { transform: translate(0,0); }
+            to { transform: translate(30px,20px); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(20,20,35,0.95);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 20px;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            backdrop-filter: blur(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-width: 90%;
         }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast-icon { font-size: 20px; flex-shrink: 0; }
+        .toast-text { font-size: 13px; color: rgba(255,255,255,0.9); }
 
-        .container {
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        h2 { margin-bottom: 25px; font-size: 22px; font-weight: 600; }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            background-color: var(--input-bg);
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 15px;
-            outline: none;
-            transition: 0.3s;
-        }
-        input[type="text"]:focus { border-color: var(--btn-color); }
-
-        button {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: none;
-            background-color: var(--btn-color);
-            color: white;
-            font-size: 16px;
+        /* Counter Badge */
+        .counter-badge {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background: rgba(254,44,85,0.15);
+            border: 1px solid rgba(254,44,85,0.3);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
             font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
+            color: var(--accent);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
-        button:active { background-color: #2563eb; transform: scale(0.98); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #resultSection {
-            display: none;
-            margin-top: 20px;
+        .counter-badge.free {
+            background: rgba(37,244,238,0.1);
+            border-color: rgba(37,244,238,0.3);
+            color: var(--accent2);
         }
-        
-        .profile-info {
-            background-color: var(--input-bg);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            text-align: left;
+        .counter-badge .counter-num {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
             font-size: 14px;
         }
-        
-        .ad-btn {
-            background-color: transparent;
-            border: 1px solid #475569;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: center;
+
+        /* Layout */
+        .page { display: none; flex-direction: column; min-height: 100vh; padding-bottom: 74px; position: relative; z-index: 1; }
+        .page.active { display: flex; }
+
+        /* ── HOME PAGE ── */
+        #homePage {
             align-items: center;
-            gap: 8px;
+            padding: 50px 20px 80px;
         }
-        
-        .ad-badge {
-            background-color: #475569;
-            font-size: 10px;
-            padding: 2px 6px;
+
+        .logo {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 40px;
+            animation: fadeDown 0.5s ease both;
+        }
+        .logo-icon {
+            width: 52px; height: 52px;
+            background: #fff;
+            border-radius: 14px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(254,44,85,0.35);
+        }
+        .logo-icon-top {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+        }
+        .logo-icon-bottom {
+            background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            padding: 4px 0; font-size: 13px; line-height: 1;
+        }
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 22px;
+        }
+        .logo-text span { color: var(--accent); }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            animation: fadeUp 0.4s ease 0.05s both;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .stat-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .card {
+            width: 100%; max-width: 400px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px 22px;
+            backdrop-filter: blur(20px);
+            animation: fadeUp 0.4s ease 0.1s both;
+        }
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px; font-weight: 700;
+            line-height: 1.2; margin-bottom: 6px;
+        }
+        .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+
+        .input-wrap { position: relative; margin-bottom: 14px; }
+        .input-icon {
+            position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%); font-size: 18px;
+            opacity: 0.4; pointer-events: none;
+        }
+        input[type="text"] {
+            width: 100%; padding: 15px 70px 15px 46px;
+            background: rgba(255,255,255,0.06);
+            border: 1.5px solid var(--border);
+            border-radius: 14px; color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px; outline: none; transition: all 0.25s;
+            -webkit-user-select: text;
+            user-select: text;
+            touch-action: manipulation;
+        }
+        input::placeholder { color: var(--muted); }
+        input:focus {
+            border-color: var(--accent);
+            background: rgba(254,44,85,0.06);
+            box-shadow: 0 0 0 4px rgba(254,44,85,0.1);
+        }
+        .paste-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            background: rgba(254,44,85,0.15);
+            border: 1px solid rgba(254,44,85,0.3);
+            color: #fe2c55;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .paste-btn:active {
+            transform: translateY(-50%) scale(0.95);
+            background: rgba(254,44,85,0.25);
+        }
+
+        .btn-primary {
+            width: 100%; padding: 16px;
+            border-radius: 14px; border: none;
+            background: linear-gradient(135deg, var(--accent), #ff6b35);
+            color: white; font-family: 'Syne', sans-serif;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 6px 24px rgba(254,44,85,0.35);
+            position: relative; overflow: hidden;
+        }
+        .btn-primary::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+
+        .footer-note {
+            text-align: center; font-size: 11px;
+            color: var(--muted); margin-top: 24px; line-height: 1.6;
+        }
+
+        /* ── RESULT PAGE ── */
+        #resultPage { padding: 0 0 80px; }
+
+        .result-topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px 10px; gap: 8px;
+            position: relative; z-index: 1;
+        }
+        .back-btn {
+            background: none; border: none; color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-btn:active { opacity: 0.5; }
+
+        .video-thumb {
+            width: 100%; aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .video-thumb::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, transparent 50%, rgba(7,7,16,0.8) 100%);
+            z-index: 1;
+        }
+        .play-btn {
+            width: 60px; height: 60px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; border: 2px solid rgba(255,255,255,0.25);
+            position: relative; z-index: 2;
+            transition: transform 0.2s;
+        }
+        .play-btn:active { transform: scale(0.9); }
+
+        /* Video duration badge */
+        .duration-badge {
+            position: absolute;
+            bottom: 12px; right: 12px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            z-index: 2;
+        }
+
+        .video-info {
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+        }
+        .video-user {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .avatar {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+        }
+        .user-details { display: flex; flex-direction: column; }
+        .username { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; }
+        .video-date { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+        .video-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+        .hashtag { color: var(--accent2); }
+
+        /* Download section */
+        .dl-section-title {
+            padding: 16px 20px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dl-buttons { padding: 8px 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+        .dl-btn {
+            width: 100%; padding: 15px 18px;
+            border-radius: 14px; border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: white; font-family: 'DM Sans', sans-serif;
+            font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(10px);
+        }
+        .dl-btn:hover { background: var(--surface-hover); }
+        .dl-btn:active { transform: scale(0.98); }
+        .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .dl-btn-left { display: flex; align-items: center; gap: 12px; }
+        .dl-btn-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .icon-v { background: rgba(254,44,85,0.15); }
+        .icon-m { background: rgba(37,244,238,0.12); }
+        .icon-success { background: rgba(0,210,106,0.15); }
+        .dl-label { font-size: 14px; font-weight: 500; }
+        .dl-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .badge-ad {
+            background: rgba(254,44,85,0.15); color: var(--accent);
+            font-size: 10px; font-weight: 700;
+            padding: 4px 10px; border-radius: 8px;
+            border: 1px solid rgba(254,44,85,0.2);
+        }
+        .badge-free {
+            background: rgba(37,244,238,0.1); color: var(--accent2);
+            font-size: 10px; font-weight: 700;
+            padding: 4px 10px; border-radius: 8px;
+            border: 1px solid rgba(37,244,238,0.2);
+        }
+
+        .progress-wrap {
+            height: 4px; background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden;
+            display: none; margin: -4px 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            width: 0%; transition: width 5s linear;
             border-radius: 4px;
+        }
+
+        /* ── DOWNLOADS PAGE ── */
+        #downloadsPage { padding: 20px 20px 80px; }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+        .page-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 26px; font-weight: 800;
+        }
+        .dl-count {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .section-day { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
+        .dl-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .dl-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px; padding: 14px;
+            display: flex; align-items: center; gap: 12px;
+            backdrop-filter: blur(10px);
+            animation: fadeUp 0.3s ease both;
+            transition: background 0.2s;
+        }
+        .dl-item:active { background: var(--surface-hover); }
+        .dl-thumb {
+            width: 62px; height: 62px;
+            border-radius: 12px; background: #1c2333;
+            flex-shrink: 0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+        .dl-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .dl-info { flex: 1; min-width: 0; }
+        .dl-link {
+            font-size: 13px; color: #3b6ef5;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; margin-bottom: 4px;
+        }
+        .dl-desc {
+            font-size: 12px; color: var(--muted); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .dl-time { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 4px; }
+
+        .empty-wrap {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding-top: 80px; gap: 16px; color: var(--muted);
+        }
+        .empty-icon { font-size: 56px; opacity: 0.2; }
+        .empty-text { font-size: 14px; }
+        .empty-sub { font-size: 12px; color: rgba(255,255,255,0.25); }
+
+        /* ── BOTTOM NAV ── */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(7,7,16,0.95);
+            border-top: 1px solid var(--border);
+            display: flex; z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+        .nav-btn {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 10px 0 14px;
+            background: none; border: none;
+            color: var(--muted); font-family: 'DM Sans', sans-serif;
+            font-size: 11px; gap: 4px; cursor: pointer;
+            transition: color 0.2s;
+        }
+        .nav-btn.active { color: var(--blue); }
+        .nav-btn svg { width: 24px; height: 24px; }
+
+        /* Result bottom nav */
+        .result-bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(7,7,16,0.95);
+            border-top: 1px solid var(--border);
+            display: none; z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+        .result-bottom-nav.visible { display: flex; }
+        .result-nav-btn {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 10px 0 14px;
+            background: none; border: none;
+            color: var(--muted); font-family: 'DM Sans', sans-serif;
+            font-size: 11px; gap: 4px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .result-nav-btn svg { width: 24px; height: 24px; }
+        .result-nav-btn:active { opacity: 0.7; transform: scale(0.95); }
+        .result-nav-btn.share-btn { color: var(--blue); }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .dots { display: inline-flex; gap: 5px; align-items: center; }
+        .dots span {
+            width: 6px; height: 6px; background: white;
+            border-radius: 50%;
+            animation: db 0.7s ease infinite;
+        }
+        .dots span:nth-child(2) { animation-delay: 0.15s; }
+        .dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes db {
+            0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        /* Confetti effect for success */
+        .success-glow {
+            animation: successPulse 0.6s ease;
+        }
+        @keyframes successPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,210,106,0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(0,210,106,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,210,106,0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="mainSection">
-        <h2>Download TikTok Video</h2>
-        <input type="text" id="tiktokLink" placeholder="https://vt.tiktok.com/...">
-        <button id="downloadBtn" onclick="processLink()">Download</button>
-    </div>
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon">✅</span>
+    <span class="toast-text" id="toastText">Success!</span>
+</div>
 
-    <div class="container" id="resultSection">
-        <div class="profile-info">
-            <strong style="color: #94a3b8;">@username</strong><br><br>
-            Video title and description will appear here #foryou #trending
+<!-- Counter Badge -->
+<div class="counter-badge free" id="counterBadge" style="display:none;">
+    <span>⬇</span>
+    <span class="counter-num" id="counterNum">8</span>
+    <span>free</span>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="homePage">
+    <div class="logo">
+        <div class="logo-icon">
+            <div class="logo-icon-top">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                    <circle cx="9" cy="17" r="3" fill="#1a1a3e"/>
+                    <path d="M9 17V7l8-2v3" stroke="#1a1a3e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="17" cy="14" r="3" fill="#1a1a3e"/>
+                </svg>
+            </div>
+            <div class="logo-icon-bottom">⬇</div>
         </div>
-        
-        <button class="ad-btn" id="adDownloadBtn" onclick="showAd()">
-            Download video <span class="ad-badge">AD</span>
-        </button>
-        <button class="ad-btn">Download music</button>
+        <div class="logo-text">TikTok<span>Save</span></div>
     </div>
 
-    <script>
-        // Initialize Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.expand(); 
-        tg.ready();
+    <div class="stats-row">
+        <div class="stat-item">
+            <div class="stat-dot"></div>
+            <span>Online</span>
+        </div>
+        <div class="stat-item">
+            <span>⚡</span>
+            <span>Fast Download</span>
+        </div>
+        <div class="stat-item">
+            <span>🔒</span>
+            <span>No Watermark</span>
+        </div>
+    </div>
 
-        function processLink() {
-            const link = document.getElementById('tiktokLink').value;
-            const btn = document.getElementById('downloadBtn');
+    <div class="card">
+        <div class="card-title">Download TikTok<br>Videos & Music</div>
+        <div class="card-sub">No watermark · HD quality · Fast & Free</div>
+        <div class="input-wrap">
+            <span class="input-icon">🔗</span>
+            <input type="text" id="tiktokLink" placeholder="Paste TikTok link here...">
+            <button class="paste-btn" onclick="pasteLink()">📋 Paste</button>
+        </div>
+        <button class="btn-primary" id="downloadBtn" onclick="processLink()">
+            Download Now ↓
+        </button>
+    </div>
 
-            if (!link) {
-                tg.showAlert("Please paste a valid TikTok link!");
-                return;
+    <div class="footer-note">
+        Free · Unlimited · HD Quality — No Watermark, Ever<br>
+        <span style="opacity:0.6;">Supports all TikTok links</span>
+    </div>
+</div>
+
+<!-- RESULT PAGE -->
+<div class="page" id="resultPage">
+    <div class="result-topbar">
+        <button class="back-btn" onclick="goHome()">← Back</button>
+    </div>
+
+    <div class="video-thumb" id="videoThumb">
+        <div class="play-btn">▶</div>
+        <div class="duration-badge" id="durationBadge">0:00</div>
+    </div>
+
+    <div class="video-info">
+        <div class="video-user">
+            <div class="avatar">🎵</div>
+            <div class="user-details">
+                <div class="username" id="rUser">@username</div>
+                <div class="video-date" id="rDate"></div>
+            </div>
+        </div>
+        <div class="video-desc" id="rDesc">Video description here</div>
+    </div>
+
+    <div class="dl-section-title">Download Options</div>
+
+    <div class="dl-buttons">
+        <button class="dl-btn" id="adBtn" onclick="showAd()">
+            <div class="dl-btn-left">
+                <div class="dl-btn-icon icon-v">📹</div>
+                <div>
+                    <div class="dl-label">Download Video</div>
+                    <div class="dl-sub">HD · No watermark</div>
+                </div>
+            </div>
+            <span class="badge-ad">AD</span>
+        </button>
+
+        <div class="progress-wrap" id="progressWrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <button class="dl-btn" id="musicBtn" onclick="downloadMusic()">
+            <div class="dl-btn-left">
+                <div class="dl-btn-icon icon-m">🎵</div>
+                <div>
+                    <div class="dl-label">Download Music</div>
+                    <div class="dl-sub">MP3 · Original sound</div>
+                </div>
+            </div>
+            <span class="badge-free">FREE</span>
+        </button>
+    </div>
+</div>
+
+<!-- DOWNLOADS PAGE -->
+<div class="page" id="downloadsPage">
+    <div class="page-header">
+        <div class="page-title">Downloads</div>
+        <div class="dl-count" id="dlCount">0 videos</div>
+    </div>
+    <div id="dlContent">
+        <div class="empty-wrap" id="emptyState">
+            <div class="empty-icon">📥</div>
+            <div class="empty-text">No downloads yet</div>
+            <div class="empty-sub">Your downloaded videos will appear here</div>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM NAV (Home + Downloads) -->
+<div class="bottom-nav" id="mainNav">
+    <button class="nav-btn active" id="navHome" onclick="switchTab('home')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+            <path d="M9 21V12h6v9"/>
+        </svg>
+        Home
+    </button>
+    <button class="nav-btn" id="navDl" onclick="switchTab('downloads')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 8v8M8.5 12.5L12 16l3.5-3.5"/>
+        </svg>
+        Downloads
+    </button>
+</div>
+
+<!-- RESULT NAV (Back + Share) -->
+<div class="result-bottom-nav" id="resultNav">
+    <button class="result-nav-btn" onclick="goHome()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 14L4 9l5-5"/>
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
+        </svg>
+        New Download
+    </button>
+    <button class="result-nav-btn share-btn" onclick="shareVideo()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>
+            <path d="M12 3v12M8.5 6.5L12 3l3.5 3.5"/>
+        </svg>
+        Share
+    </button>
+</div>
+
+<script>
+    // Telegram WebApp init
+    var tg = null;
+    try {
+        tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            if (tg.requestFullscreen) tg.requestFullscreen();
+        }
+    } catch(e) {}
+
+    function tgAlert(msg) {
+        if (tg) tg.showAlert(msg);
+        else alert(msg);
+    }
+    function tgOpenLink(url) {
+        if (tg) tg.openLink(url);
+        else window.open(url, '_blank');
+    }
+
+    // State
+    var downloads = [], currentLink = '', freeDownloads = 0, maxFree = 8;
+    var currentVideoUrl = '', currentMusicUrl = '', currentThumbUrl = '';
+
+    // Toast notification
+    function showToast(icon, text, duration) {
+        var toast = document.getElementById('toast');
+        document.getElementById('toastIcon').textContent = icon;
+        document.getElementById('toastText').textContent = text;
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, duration || 3000);
+    }
+
+    // Update counter badge
+    function updateCounter() {
+        var badge = document.getElementById('counterBadge');
+        var num = document.getElementById('counterNum');
+        if (freeDownloads > 0) {
+            badge.style.display = 'flex';
+            badge.className = 'counter-badge free';
+            num.textContent = freeDownloads;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Navigation
+    function showMainNav() {
+        document.getElementById('mainNav').style.display = 'flex';
+        document.getElementById('resultNav').classList.remove('visible');
+    }
+    function showResultNav() {
+        document.getElementById('mainNav').style.display = 'none';
+        document.getElementById('resultNav').classList.add('visible');
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+        document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+        showMainNav();
+        if (tab === 'home') {
+            document.getElementById('homePage').classList.add('active');
+            document.getElementById('navHome').classList.add('active');
+        } else {
+            document.getElementById('downloadsPage').classList.add('active');
+            document.getElementById('navDl').classList.add('active');
+            renderDownloads();
+        }
+    }
+
+    // Paste from clipboard
+    function pasteLink() {
+        if (tg && tg.readTextFromClipboard) {
+            tg.readTextFromClipboard(function(text) {
+                if (text) {
+                    document.getElementById('tiktokLink').value = text;
+                    showToast('📋', 'Link pasted!', 2000);
+                } else {
+                    var inp = document.getElementById('tiktokLink');
+                    inp.focus();
+                    tgAlert("Long-press the input field and tap Paste.");
+                }
+            });
+        } else {
+            var inp = document.getElementById('tiktokLink');
+            inp.focus();
+            try {
+                navigator.clipboard.readText().then(function(text) {
+                    inp.value = text;
+                    showToast('📋', 'Link pasted!', 2000);
+                }).catch(function() {});
+            } catch(e) {}
+        }
+    }
+
+    // Process TikTok link
+    function processLink() {
+        var link = document.getElementById('tiktokLink').value.trim();
+        var btn = document.getElementById('downloadBtn');
+        if (!link) {
+            showToast('⚠️', 'Please paste a valid TikTok link!', 3000);
+            return;
+        }
+
+        // Basic validation
+        if (!link.includes('tiktok.com') && !link.includes('tiktok')) {
+            showToast('❌', 'This doesn\'t look like a TikTok link', 3000);
+            return;
+        }
+
+        currentLink = link;
+        currentVideoUrl = '';
+        currentMusicUrl = '';
+        currentThumbUrl = '';
+
+        btn.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+        btn.disabled = true;
+
+        // Call tikwm API
+        fetch('https://www.tikwm.com/api/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'url=' + encodeURIComponent(link) + '&hd=1'
+        })
+        .then(function(res){ return res.json(); })
+        .then(function(data) {
+            btn.innerHTML = 'Download Now ↓';
+            btn.disabled = false;
+
+            if (data && data.code === 0 && data.data) {
+                var info = data.data;
+                currentVideoUrl = info.hdplay || info.play || '';
+                currentMusicUrl = info.music || '';
+                currentThumbUrl = info.cover || info.origin_cover || '';
+
+                // Show real info
+                var username = info.author && info.author.unique_id ? info.author.unique_id : extractUser(link);
+                document.getElementById('rUser').textContent = '@' + username;
+                document.getElementById('rDesc').textContent = info.title || 'TikTok Video';
+                document.getElementById('rDate').textContent = formatDate();
+
+                // Duration
+                if (info.duration) {
+                    var mins = Math.floor(info.duration / 60);
+                    var secs = info.duration % 60;
+                    document.getElementById('durationBadge').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                }
+
+                // Show thumbnail
+                if (currentThumbUrl) {
+                    var thumbArea = document.getElementById('videoThumb');
+                    thumbArea.style.backgroundImage = 'url(' + currentThumbUrl + ')';
+                    thumbArea.style.backgroundSize = 'cover';
+                    thumbArea.style.backgroundPosition = 'center';
+                }
+
+                showToast('✅', 'Video found! Choose download option', 2500);
+            } else {
+                document.getElementById('rUser').textContent = '@' + extractUser(link);
+                document.getElementById('rDesc').textContent = 'Video ready to download';
+                document.getElementById('rDate').textContent = formatDate();
+                showToast('⚠️', 'Limited info available, but download should work', 3000);
             }
 
-            // Show loading state
-            btn.innerText = "Loading...";
-            btn.style.opacity = "0.7";
-
-            // Simulate backend API processing delay (2 seconds)
-            setTimeout(() => {
-                document.getElementById('mainSection').style.display = 'none';
-                document.getElementById('resultSection').style.display = 'block';
-            }, 2000);
-        }
-
-        // Function to handle the Ad display and subsequent download
-        function showAd() {
-            // Your provided Monetag Direct Link
-            const adUrl = "https://www.effectivecpmnetwork.com/m0mifaq4?key=4844cde739311ef0e587e990e3a81d91";
-            
-            // Safely open the link using Telegram's in-app browser
-            tg.openLink(adUrl);
-
-            // Disable the button to prevent multiple clicks and show processing state
-            const adBtn = document.getElementById('adDownloadBtn');
-            adBtn.innerHTML = "Processing... <span class='ad-badge'>Wait</span>";
-            adBtn.disabled = true;
-
-            // Wait for 5 seconds (5000 milliseconds) before enabling the download
-            setTimeout(() => {
-                // Restore the button to its original state
-                adBtn.innerHTML = "Download Ready <span class='ad-badge'>✓</span>";
+            // Setup download button state
+            var adBtn = document.getElementById('adBtn');
+            if (freeDownloads > 0) {
+                adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-v">📹</div><div><div class="dl-label">Download Video</div><div class="dl-sub">Free · ' + freeDownloads + ' remaining</div></div></div><span class="badge-free">FREE</span>';
                 adBtn.disabled = false;
-                
-                // Alert the user and trigger the actual download logic here
-                // In a real scenario, you might use tg.sendData("download_ready") to notify your bot
-                tg.showAlert("Ad viewed successfully. The video will now start downloading.");
-                
-            }, 5000); // You can adjust the waiting time here
+                adBtn.onclick = freeDownload;
+            } else {
+                adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-v">📹</div><div><div class="dl-label">Download Video</div><div class="dl-sub">Watch a short ad to unlock</div></div></div><span class="badge-ad">AD</span>';
+                adBtn.disabled = false;
+                adBtn.onclick = showAd;
+            }
+
+            document.getElementById('progressWrap').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+
+            // Switch to result page
+            document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+            document.getElementById('resultPage').classList.add('active');
+            showResultNav();
+            updateCounter();
+        })
+        .catch(function(err) {
+            btn.innerHTML = 'Download Now ↓';
+            btn.disabled = false;
+            showToast('❌', 'Failed to fetch video. Check link and try again.', 3500);
+        });
+    }
+
+    // Download video file
+    function doDownload() {
+        if (!currentVideoUrl) {
+            showToast('❌', 'Video URL not found. Please try again.', 3000);
+            return;
         }
-    </script>
+        showToast('⬇️', 'Starting download...', 2000);
+
+        var filename = 'tiktok_' + Date.now() + '.mp4';
+        fetch(currentVideoUrl)
+            .then(function(res) { return res.blob(); })
+            .then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                addToDownloads();
+                showToast('✅', 'Download complete!', 3000);
+            })
+            .catch(function() {
+                if (tg) { tg.openLink(currentVideoUrl); }
+                else { window.open(currentVideoUrl, '_blank'); }
+                addToDownloads();
+                showToast('✅', 'Opening download link...', 2500);
+            });
+    }
+
+    // Download music
+    function downloadMusic() {
+        if (!currentMusicUrl) {
+            showToast('⚠️', 'Music not available for this video', 3000);
+            return;
+        }
+        showToast('🎵', 'Downloading music...', 2000);
+
+        fetch(currentMusicUrl)
+            .then(function(res) { return res.blob(); })
+            .then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'tiktok_music_' + Date.now() + '.mp3';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('✅', 'Music downloaded!', 3000);
+            })
+            .catch(function() {
+                if (tg) { tg.openLink(currentMusicUrl); }
+                else { window.open(currentMusicUrl, '_blank'); }
+                showToast('✅', 'Opening music link...', 2500);
+            });
+    }
+
+    // Add to downloads history
+    function addToDownloads() {
+        downloads.unshift({
+            link: currentLink,
+            desc: document.getElementById('rDesc').textContent,
+            thumb: currentThumbUrl,
+            time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}),
+        });
+    }
+
+    // Free download (no ad needed)
+    function freeDownload() {
+        freeDownloads--;
+        updateCounter();
+        doDownload();
+
+        var adBtn = document.getElementById('adBtn');
+        if (freeDownloads > 0) {
+            adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-v">📹</div><div><div class="dl-label">Download Video</div><div class="dl-sub">Free · ' + freeDownloads + ' remaining</div></div></div><span class="badge-free">FREE</span>';
+            adBtn.onclick = freeDownload;
+        } else {
+            adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-v">📹</div><div><div class="dl-label">Download Video</div><div class="dl-sub">Watch a short ad to unlock</div></div></div><span class="badge-ad">AD</span>';
+            adBtn.onclick = showAd;
+            showToast('💡', 'Free downloads used! Watch an ad for 8 more.', 3500);
+        }
+    }
+
+    // Show ad and unlock downloads
+    function showAd() {
+        // Open ad link
+        tgOpenLink("https://www.effectivecpmnetwork.com/m0mifaq4?key=4844cde739311ef0e587e990e3a81d91");
+
+        var adBtn = document.getElementById('adBtn');
+        var progressWrap = document.getElementById('progressWrap');
+        var progressBar = document.getElementById('progressBar');
+
+        adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-v">⏳</div><div><div class="dl-label">Verifying ad view...</div><div class="dl-sub">Please wait 5 seconds</div></div></div><span class="badge-ad">5s</span>';
+        adBtn.disabled = true;
+        progressWrap.style.display = 'block';
+        progressBar.style.width = '0%';
+        setTimeout(function(){ progressBar.style.width = '100%'; }, 100);
+
+        // Countdown in badge
+        var countdown = 5;
+        var countInterval = setInterval(function() {
+            countdown--;
+            if (countdown > 0) {
+                adBtn.querySelector('.badge-ad').textContent = countdown + 's';
+            }
+        }, 1000);
+
+        setTimeout(function() {
+            clearInterval(countInterval);
+            freeDownloads = maxFree;
+            updateCounter();
+
+            adBtn.innerHTML = '<div class="dl-btn-left"><div class="dl-btn-icon icon-success">✅</div><div><div class="dl-label">Download Ready!</div><div class="dl-sub">Free · ' + freeDownloads + ' downloads unlocked</div></div></div><span class="badge-free">FREE</span>';
+            adBtn.disabled = false;
+            adBtn.classList.add('success-glow');
+            adBtn.onclick = freeDownload;
+
+            // Auto download
+            doDownload();
+            showToast('🎉', '8 free downloads unlocked!', 3000);
+
+            setTimeout(function() { adBtn.classList.remove('success-glow'); }, 1000);
+        }, 5000);
+    }
+
+    // Go home
+    function goHome() {
+        document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+        document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+        document.getElementById('homePage').classList.add('active');
+        document.getElementById('navHome').classList.add('active');
+        document.getElementById('tiktokLink').value = '';
+        showMainNav();
+
+        // Reset thumb
+        var thumbArea = document.getElementById('videoThumb');
+        thumbArea.style.backgroundImage = '';
+    }
+
+    // Share
+    function shareVideo() {
+        var shareText = 'Download TikTok videos without watermark! Try this bot:';
+        var botLink = 'https://t.me/tiktokviedodownloaderbot';
+        if (tg) {
+            var shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(botLink) + '&text=' + encodeURIComponent(shareText);
+            tg.openTelegramLink(shareUrl);
+        } else if (navigator.share) {
+            navigator.share({ url: botLink, text: shareText });
+        } else {
+            showToast('📋', 'Share link copied!', 2000);
+        }
+    }
+
+    // Render downloads list
+    function renderDownloads() {
+        var content = document.getElementById('dlContent');
+        document.getElementById('dlCount').textContent = downloads.length + ' video' + (downloads.length !== 1 ? 's' : '');
+
+        if (downloads.length === 0) {
+            content.innerHTML = '<div class="empty-wrap"><div class="empty-icon">📥</div><div class="empty-text">No downloads yet</div><div class="empty-sub">Your downloaded videos will appear here</div></div>';
+            return;
+        }
+
+        var html = '<div class="section-day">Today</div><div class="dl-list">';
+        downloads.forEach(function(d, i) {
+            var thumbHtml = d.thumb
+                ? '<img src="' + d.thumb + '" alt="">'
+                : '🎵';
+            html += '<div class="dl-item" style="animation-delay:' + (i * 0.05) + 's"><div class="dl-thumb">' + thumbHtml + '</div><div class="dl-info"><div class="dl-link">' + d.link + '</div><div class="dl-desc">' + d.desc + '</div><div class="dl-time">' + d.time + '</div></div></div>';
+        });
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    // Helpers
+    function extractUser(link) {
+        var match = link.match(/@([^/?]+)/);
+        return match ? match[1] : 'user';
+    }
+    function formatDate() {
+        var d = new Date();
+        return ('0'+d.getDate()).slice(-2)+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+d.getFullYear();
+    }
+
+    // Init
+    updateCounter();
+</script>
 </body>
 </html>
