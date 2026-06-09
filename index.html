@@ -557,17 +557,18 @@
                 if (text) {
                     document.getElementById('tiktokLink').value = text;
                 } else {
-                    tgAlert("Clipboard is empty. Please copy the TikTok link first.");
+                    // fallback — focus input so user can paste manually
+                    var inp = document.getElementById('tiktokLink');
+                    inp.focus();
+                    tgAlert("Long-press the input field and tap Paste.");
                 }
             });
-        } else if (navigator.clipboard && navigator.clipboard.readText) {
-            navigator.clipboard.readText().then(function(text) {
-                document.getElementById('tiktokLink').value = text;
-            }).catch(function() {
-                tgAlert("Cannot access clipboard. Please paste manually.");
-            });
         } else {
-            tgAlert("Please long-press the input field and tap Paste.");
+            var inp = document.getElementById('tiktokLink');
+            inp.focus();
+            try {
+                document.execCommand('paste');
+            } catch(e) {}
         }
     }
 
@@ -585,14 +586,14 @@
         btn.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
         btn.disabled = true;
 
-        // Call tikwm API via proxy to avoid CORS
-        var apiUrl = 'https://www.tikwm.com/api/?url=' + encodeURIComponent(link) + '&hd=1';
-        var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(apiUrl);
-
-        fetch(proxyUrl)
+        // Call tikwm API directly
+        fetch('https://www.tikwm.com/api/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'url=' + encodeURIComponent(link) + '&hd=1'
+        })
             .then(function(res){ return res.json(); })
-            .then(function(proxyData) {
-                var data = JSON.parse(proxyData.contents);
+            .then(function(data) {
                 btn.innerHTML = 'Download Now ↓';
                 btn.disabled = false;
 
