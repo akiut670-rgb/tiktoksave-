@@ -309,9 +309,94 @@
         }
         .back-btn:active { opacity: 0.5; }
 
-        /* Image Carousel Container */
-        .carousel-wrapper {
+        /* Media Container */
+        .media-wrapper {
             padding: 16px 20px;
+        }
+
+        .media-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: linear-gradient(135deg, #1a2a4e, #162a4e, #0f1f3e);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        body.light-theme .media-container {
+            background: linear-gradient(135deg, #e8f0ff, #f0f4ff, #f5f8ff);
+        }
+
+        /* Thumbnail Image */
+        .media-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Play Button Overlay */
+        .play-button-overlay {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .media-container:hover .play-button-overlay {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(1.1);
+        }
+
+        .media-container:active .play-button-overlay {
+            transform: scale(0.95);
+        }
+
+        /* Video Player (Hidden by default) */
+        .video-player-container {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        .video-player-container.playing {
+            display: flex;
+        }
+
+        .video-player-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Image Carousel */
+        .carousel-wrapper {
+            display: none;
+        }
+
+        .carousel-wrapper.active {
+            display: block;
         }
 
         .carousel-main-container {
@@ -417,28 +502,6 @@
 
         .thumbnail:active {
             transform: scale(0.95);
-        }
-
-        /* Video Container */
-        .video-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1/1;
-            background: linear-gradient(135deg, #1a2a4e, #162a4e, #0f1f3e);
-            border-radius: 20px;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-
-        body.light-theme .video-container {
-            background: linear-gradient(135deg, #e8f0ff, #f0f4ff, #f5f8ff);
-        }
-
-        .video-container video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #000;
         }
 
         .video-info {
@@ -951,22 +1014,6 @@
                 opacity: 1;
             }
         }
-
-        .success-glow {
-            animation: successPulse 0.6s ease;
-        }
-
-        @keyframes successPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0,210,106,0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 12px rgba(0,210,106,0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0,210,106,0);
-            }
-        }
     </style>
 </head>
 <body>
@@ -1046,21 +1093,27 @@
     </div>
 
     <!-- Photo Carousel -->
-    <div class="carousel-wrapper" id="carouselWrapper" style="display:none;">
-        <div class="carousel-main-container">
-            <div id="carouselImagesContainer"></div>
-            <div class="carousel-icon-overlay">🖼️</div>
+    <div class="carousel-wrapper" id="carouselWrapper">
+        <div class="media-wrapper">
+            <div class="carousel-main-container">
+                <div id="carouselImagesContainer"></div>
+                <div class="carousel-icon-overlay">🖼️</div>
+            </div>
+            <div class="thumbnail-strip" id="thumbnailStrip"></div>
         </div>
-        <div class="thumbnail-strip" id="thumbnailStrip"></div>
     </div>
 
-    <!-- Video Player (Embedded) -->
-    <div class="carousel-wrapper" id="videoWrapper" style="display:none;">
-        <div class="video-container" id="videoContainer">
-            <video id="videoPlayer" controls>
-                <source src="" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+    <!-- Video Preview with Play Button -->
+    <div class="media-wrapper" id="videoWrapper">
+        <div class="media-container" id="mediaContainer" onclick="playVideo()">
+            <img id="videoThumbnail" class="media-thumbnail" src="" alt="Video thumbnail">
+            <div class="play-button-overlay">▶</div>
+            <div class="video-player-container" id="videoPlayerContainer">
+                <video id="videoPlayer" controls>
+                    <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
         </div>
     </div>
 
@@ -1371,6 +1424,20 @@
         }, false);
     }
 
+    // Play video function
+    function playVideo() {
+        var playerContainer = document.getElementById('videoPlayerContainer');
+        var videoPlayer = document.getElementById('videoPlayer');
+        
+        if (!playerContainer.classList.contains('playing')) {
+            playerContainer.classList.add('playing');
+            videoPlayer.play();
+        } else {
+            playerContainer.classList.remove('playing');
+            videoPlayer.pause();
+        }
+    }
+
     // Process TikTok link
     function processLink() {
         var link = document.getElementById('tiktokLink').value.trim();
@@ -1422,17 +1489,24 @@
                 // Hide/show carousel or video based on content type
                 if (currentPhotos.length > 0) {
                     // It's a photo carousel
-                    document.getElementById('carouselWrapper').style.display = 'block';
+                    document.getElementById('carouselWrapper').classList.add('active');
                     document.getElementById('videoWrapper').style.display = 'none';
                     initCarousel();
                 } else if (currentVideoUrl) {
-                    // It's a video
-                    document.getElementById('carouselWrapper').style.display = 'none';
+                    // It's a video - show thumbnail with play button
+                    document.getElementById('carouselWrapper').classList.remove('active');
                     document.getElementById('videoWrapper').style.display = 'block';
+                    
+                    // Set thumbnail
+                    var videoThumbnail = document.getElementById('videoThumbnail');
+                    videoThumbnail.src = currentThumbUrl || '';
                     
                     // Set video source
                     var videoPlayer = document.getElementById('videoPlayer');
                     videoPlayer.src = currentVideoUrl;
+                    
+                    // Reset player state
+                    document.getElementById('videoPlayerContainer').classList.remove('playing');
                 }
 
                 // Show/hide buttons
@@ -1551,8 +1625,13 @@
         showMainNav();
 
         // Reset displays
-        document.getElementById('carouselWrapper').style.display = 'none';
+        document.getElementById('carouselWrapper').classList.remove('active');
         document.getElementById('videoWrapper').style.display = 'none';
+        
+        // Stop video if playing
+        var videoPlayer = document.getElementById('videoPlayer');
+        videoPlayer.pause();
+        document.getElementById('videoPlayerContainer').classList.remove('playing');
     }
 
     // Share
