@@ -434,12 +434,21 @@
             font-size: 24px;
             z-index: 10;
             background: rgba(0,0,0,0.3);
-            width: 36px;
-            height: 36px;
+            width: 48px;
+            height: 64px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        .carousel-icon-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Thumbnail Strip */
@@ -1097,7 +1106,7 @@
         <div class="media-wrapper">
             <div class="carousel-main-container">
                 <div id="carouselImagesContainer"></div>
-                <div class="carousel-icon-overlay">🖼️</div>
+                <div class="carousel-icon-overlay" id="carouselThumbnailOverlay">🖼️</div>
             </div>
             <div class="thumbnail-strip" id="thumbnailStrip"></div>
         </div>
@@ -1390,6 +1399,12 @@
         thumbs.forEach(function(thumb, index) {
             thumb.classList.toggle('active', index === currentPhotoIndex);
         });
+
+        // Update carousel thumbnail overlay with current photo
+        var overlay = document.getElementById('carouselThumbnailOverlay');
+        if (currentPhotos[currentPhotoIndex]) {
+            overlay.innerHTML = '<img src="' + currentPhotos[currentPhotoIndex] + '" alt="Current photo">';
+        }
 
         // Auto-scroll thumbnail strip
         var strip = document.getElementById('thumbnailStrip');
